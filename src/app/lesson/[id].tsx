@@ -1,9 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AnimatedButton } from 'react-native-3d-animated-buttons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,16 +25,14 @@ export default function LessonScreen() {
   
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [germanVoiceId, setGermanVoiceId] = useState<string | undefined>(undefined);
-  
-  // Sentence Build specific state
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
 
-  // --- Audio Players (NEW: expo-audio) ---
+  // --- Audio Players ---
   const correctPlayer = useAudioPlayer(require('../../../assets/sounds/correct.mp3'));
   const wrongPlayer = useAudioPlayer(require('../../../assets/sounds/wrong.mp3'));
 
   const exercise = lesson?.exercises[index];
-  const isAnswered = selected !== null || (exercise?.type === 'sentence_build' && selectedWords.length > 0 && isAnsweredState());
+  const isAnswered = selected !== null; // Simplified: if an option is selected, it's answered
   const total = lesson?.exercises.length || 0;
   const isLast = index + 1 >= total;
 
@@ -47,11 +46,11 @@ export default function LessonScreen() {
     loadGermanVoice();
   }, []);
 
-  // --- Sound Effect Player (NEW: expo-audio) ---
+  // --- Sound Effect Player ---
   function playSound(isCorrect: boolean) {
     try {
       const player = isCorrect ? correctPlayer : wrongPlayer;
-      player.seekTo(0); // Reset to start
+      player.seekTo(0);
       player.play();
     } catch (e) {
       console.log("Sound error", e);
@@ -66,7 +65,6 @@ export default function LessonScreen() {
         Speech.speak(exercise.prompt, { language: 'de-DE', voice: germanVoiceId, rate: 0.9 });
       }
       
-      // Shuffle options
       const options = [...exercise.options];
       for (let i = options.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -84,30 +82,55 @@ export default function LessonScreen() {
     if (isRight) { setScore(s => s + 1); playSound(true); } else { playSound(false); }
     Haptics.notificationAsync(isRight ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
   }
-
-  function handleWordTap(word: string) {
-    if (isAnswered) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (selectedWords.includes(word)) {
-      setSelectedWords(prev => prev.filter(w => w !== word));
-    } else {
-      setSelectedWords(prev => [...prev, word]);
-    }
+function handleWordTap(word: string) {
+  if (isAnswered) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  
+  let newSelected;
+  if (selectedWords.includes(word)) {
+    newSelected = selectedWords.filter(w => w !== word);
+  } else {
+    newSelected = [...selectedWords, word];
   }
+  setSelectedWords(newSelected);
+
+  // Auto-check if the user has placed all the required words
+  if (exercise?.type === 'sentence_build' && newSelected.length === exercise.options.length) {
+    // We use a small timeout to let the UI update first
+    setTimeout(() => {
+      const userAnswer = newSelected.join(' ');
+      const isRight = userAnswer === exercise.correctAnswer;
+      setSelected(userAnswer);
+      if (isRight) { setScore(s => s + 1); playSound(true); } else { playSound(false); }
+      Haptics.notificationAsync(isRight ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+    }, 100);
+  }
+}
 
   function checkSentence() {
     if (selectedWords.length === 0) return;
     const userAnswer = selectedWords.join(' ');
     const isRight = userAnswer === exercise?.correctAnswer;
     
-    setSelected(userAnswer); // Use the selected state to mark it as answered
+    setSelected(userAnswer); 
     if (isRight) { setScore(s => s + 1); playSound(true); } else { playSound(false); }
     Haptics.notificationAsync(isRight ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
   }
 
-  function next() {
-    if (isLast) setFinished(true);
-    else { 
+  async function next() {
+    if (isLast) {
+      setFinished(true);
+      try {
+        const saved = await AsyncStorage.getItem('@jarmalka_progress');
+        let progress = saved ? JSON.parse(saved) : [];
+        if (!progress.includes(lesson?.id)) {
+          progress.push(lesson?.id);
+          await AsyncStorage.setItem('@jarmalka_progress', JSON.stringify(progress));
+        }
+      } catch (e) {
+        console.log("Failed to save progress", e);
+      }
+    } else { 
       setIndex(i => i + 1); 
       setSelected(null); 
       setSelectedWords([]); 
@@ -116,10 +139,6 @@ export default function LessonScreen() {
 
   function restart() {
     setIndex(0); setSelected(null); setScore(0); setFinished(false); setSelectedWords([]);
-  }
-  
-  function isAnsweredState() {
-    return selected !== null;
   }
 
   if (!lesson || !exercise) return null;
@@ -159,21 +178,19 @@ export default function LessonScreen() {
             <ThemedText type="small" style={styles.counter}>{index + 1}/{total}</ThemedText>
           </View>
 
-          {/* TTS Warning Banner */}
           {!germanVoiceId && (
             <View style={styles.warningBanner}>
               <ThemedText type="small" style={{ color: '#cc0000' }}>⚠️ Codka Jarmalka lama helin telefoonkaaga.</ThemedText>
               <ThemedText type="small" style={{ color: '#cc0000', marginTop: 4 }}>
-                Fadlan ka shid Settings &gt; Text-to-Speech si aad u maqasho dhawaaqa saxda ah.
+                Fadlan ka shid Settings {'>'} Text-to-Speech si aad u maqasho dhawaaqa saxda ah.
               </ThemedText>
             </View>
-          )}
+          )} 
 
           <ThemedText type="small" style={styles.instruction}>
             {exercise.type === 'multiple_choice' ? 'Dooro tarjumaada saxda ah:' : 'Iska soo ururi jumlada saxda ah:'}
           </ThemedText>
           
-          {/* Prompt Area */}
           <View style={styles.promptContainer}>
             <ThemedText type="title" style={styles.prompt}>{exercise.prompt}</ThemedText>
             {exercise.type === 'multiple_choice' && (
@@ -206,7 +223,6 @@ export default function LessonScreen() {
           {/* SENTENCE BUILD UI */}
           {exercise.type === 'sentence_build' && (
             <View style={styles.sentenceContainer}>
-              {/* The blank line where words go */}
               <View style={styles.sentenceLine}>
                 {selectedWords.map((word, i) => (
                   <Pressable key={`${word}-${i}`} onPress={() => handleWordTap(word)} style={styles.wordChipSelected}>
@@ -215,7 +231,6 @@ export default function LessonScreen() {
                 ))}
               </View>
 
-              {/* The word bank */}
               <View style={styles.wordBank}>
                 {shuffledOptions.map((word, i) => {
                   const isUsed = selectedWords.includes(word);
@@ -232,7 +247,6 @@ export default function LessonScreen() {
                 })}
               </View>
 
-              {/* Check Button for Sentence Build */}
               {!isAnswered && (
                 <View style={{ marginTop: 20 }}>
                   <AnimatedButton 
@@ -245,7 +259,6 @@ export default function LessonScreen() {
                   />
                 </View>
               )}
-              {/* Feedback for Sentence Build */}
               {isAnswered && (
                 <View style={{ marginTop: 20, alignItems: 'center' }}>
                    <ThemedText style={{ color: selected === exercise.correctAnswer ? '#58a700' : '#ea2b2b', fontWeight: 'bold', fontSize: 18 }}>
@@ -256,12 +269,26 @@ export default function LessonScreen() {
             </View>
           )}
 
-          {/* Continue Button */}
+          {/* SINGLE CONTINUE BUTTON */}
           {isAnswered && (
             <View style={{ marginTop: 20 }}>
               <AnimatedButton title={isLast ? "Dhammaystir" : "Xiga →"} onPress={next} backgroundColor="#58cc02" shadowColor="#58a700" fullWidth hapticStyle="Medium" />
             </View>
           )}
+
+          {/* REPORT BUTTON */}
+          <Pressable 
+            style={{ marginTop: 40, marginBottom: 20, alignItems: 'center' }} 
+            onPress={() => {
+              const subject = `Report Qalad: ${lesson.id} - ${exercise.id}`;
+              const body = `Asc, waxaan helay qalad casharkan dhexdiisa.\n\nLesson: ${lesson.title}\nExercise: ${exercise.prompt}\nCorrect Answer: ${exercise.correctAnswer}\n\nFadlan halkan ku qor qaladka aad aragtay: `;
+              Linking.openURL(`mailto:YOUR_EMAIL_HERE@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+            }}
+          >
+            <ThemedText type="small" style={{ color: '#ea2b2b', textDecorationLine: 'underline' }}>
+              ⚠️ Soo sheeg qalad (Report a problem)
+            </ThemedText>
+          </Pressable>
 
         </ScrollView>
       </SafeAreaView>
