@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -13,6 +13,16 @@ export default function LearnScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ThemedText type="title" style={styles.heading}>Baro Jarmalka</ThemedText>
         <ThemedText type="small" style={styles.subheading}>Casharrada A1 — bilaash</ThemedText>
+
+      <Pressable onPress={() => router.push('/alphabet' as any)} style={{ marginBottom: 20 }}>
+  <ThemedView type="backgroundElement" style={{ padding: 20, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View>
+      <ThemedText type="title" style={{ fontSize: 18 }}>Alfaabka Jarmalka</ThemedText>
+      <ThemedText type="small">Baro dhawaaqa xarfaha (A-Z)</ThemedText>
+    </View>
+    <ThemedText style={{ fontSize: 24 }}>🔤</ThemedText>
+  </ThemedView>
+</Pressable>
 
         <FlatList
           data={a1Lessons}

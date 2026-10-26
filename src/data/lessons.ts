@@ -1,18 +1,18 @@
-export type ExerciseType = 'multiple_choice';
+export type ExerciseType = 'multiple_choice' | 'sentence_build';
 
 export type Exercise = {
   id: string;
   type: ExerciseType;
-  prompt: string;          
-  options: string[];       
-  correctAnswer: string;
+  prompt: string;          // For MC: German word. For Sentence: Somali translation
+  options: string[];       // For MC: 3 choices. For Sentence: all words to drag
+  correctAnswer: string;   // The exact correct string (or joined sentence)
   hint?: string;
 };
 
 export type Lesson = {
   id: string;
-  title: string;           
-  titleDe: string;         
+  title: string;
+  titleDe: string;
   unit: number;
   exercises: Exercise[];
 };
@@ -29,27 +29,48 @@ export const a1Lessons: Lesson[] = [
       { id: 'g3', type: 'multiple_choice', prompt: 'Wie heißt du?', options: ['Magacaa?', 'Sidee tahay?', 'Xaggee ka timid?'], correctAnswer: 'Magacaa?' },
       { id: 'g4', type: 'multiple_choice', prompt: 'Danke', options: ['Mahadsanid', 'Fadlan', 'Nabadgelyo'], correctAnswer: 'Mahadsanid' },
       { id: 'g5', type: 'multiple_choice', prompt: 'Auf Wiedersehen', options: ['Nabadgelyo', 'Subax wanaagsan', 'Mahadsanid'], correctAnswer: 'Nabadgelyo' },
-      { id: 'g6', type: 'multiple_choice', prompt: 'Bitte', options: ['Fadlan', 'Mahadsanid', 'Haa'], correctAnswer: 'Fadlan' },
-      { id: 'g7', type: 'multiple_choice', prompt: 'Ja', options: ['Haa', 'Maya', 'Waan ka xumahay'], correctAnswer: 'Haa' },
-      { id: 'g8', type: 'multiple_choice', prompt: 'Nein', options: ['Maya', 'Haa', 'Fadlan'], correctAnswer: 'Maya' },
     ],
   },
   {
-    id: 'a1-numbers-01',
-    title: 'Lambarrada — Numbers',
-    titleDe: 'Zahlen',
+    id: 'a1-family-01',
+    title: 'Qoyska — Family',
+    titleDe: 'Die Familie',
     unit: 2,
     exercises: [
-      { id: 'n1', type: 'multiple_choice', prompt: 'Eins', options: ['Kow', 'Laba', 'Saddex'], correctAnswer: 'Kow' },
-      { id: 'n2', type: 'multiple_choice', prompt: 'Zwei', options: ['Laba', 'Kow', 'Afar'], correctAnswer: 'Laba' },
-      { id: 'n3', type: 'multiple_choice', prompt: 'Drei', options: ['Saddex', 'Shan', 'Laba'], correctAnswer: 'Saddex' },
-      { id: 'n4', type: 'multiple_choice', prompt: 'Vier', options: ['Afar', 'Saddex', 'Lix'], correctAnswer: 'Afar' },
-      { id: 'n5', type: 'multiple_choice', prompt: 'Fünf', options: ['Shan', 'Afar', 'Toddoba'], correctAnswer: 'Shan' },
-      { id: 'n6', type: 'multiple_choice', prompt: 'Sechs', options: ['Lix', 'Shan', 'Sagaal'], correctAnswer: 'Lix' },
-      { id: 'n7', type: 'multiple_choice', prompt: 'Sieben', options: ['Toddoba', 'Sideed', 'Lix'], correctAnswer: 'Toddoba' },
-      { id: 'n8', type: 'multiple_choice', prompt: 'Acht', options: ['Sideed', 'Toddoba', 'Toban'], correctAnswer: 'Sideed' },
-      { id: 'n9', type: 'multiple_choice', prompt: 'Neun', options: ['Sagaal', 'Sideed', 'Kow'], correctAnswer: 'Sagaal' },
-      { id: 'n10', type: 'multiple_choice', prompt: 'Zehn', options: ['Toban', 'Sagaal', 'Shan'], correctAnswer: 'Toban' },
+      { id: 'f1', type: 'multiple_choice', prompt: 'Vater', options: ['Aabbe', 'Hooyo', 'Walaal'], correctAnswer: 'Aabbe' },
+      { id: 'f2', type: 'multiple_choice', prompt: 'Mutter', options: ['Hooyo', 'Aabbe', 'Adeer'], correctAnswer: 'Hooyo' },
+      { id: 'f3', type: 'multiple_choice', prompt: 'Bruder', options: ['Walaal (lab)', 'Walaal (dheddig)', 'Awoowe'], correctAnswer: 'Walaal (lab)' },
+      { id: 'f4', type: 'multiple_choice', prompt: 'Schwester', options: ['Walaal (dheddig)', 'Walaal (lab)', 'Ayeeyo'], correctAnswer: 'Walaal (dheddig)' },
+      { id: 'f5', type: 'multiple_choice', prompt: 'Kind', options: ['Ilmo', 'Nin', 'Naag'], correctAnswer: 'Ilmo' },
     ],
   },
+  {
+    id: 'a1-sentences-01',
+    title: 'Jumlado Fudud — Simple Sentences',
+    titleDe: 'Einfache Sätze',
+    unit: 3,
+    exercises: [
+      { 
+        id: 's1', 
+        type: 'sentence_build', 
+        prompt: 'Waxaan ahay arday.', 
+        options: ['Ich', 'bin', 'Student', 'Lehrer'], 
+        correctAnswer: 'Ich bin Student' 
+      },
+      { 
+        id: 's2', 
+        type: 'sentence_build', 
+        prompt: 'Sidee tahay?', 
+        options: ['Wie', 'geht', 'es', 'dir'], 
+        correctAnswer: 'Wie geht es dir' 
+      },
+      { 
+        id: 's3', 
+        type: 'sentence_build', 
+        prompt: 'Waxaan ku noolahay Jarmalka.', 
+        options: ['Ich', 'wohne', 'in', 'Deutschland'], 
+        correctAnswer: 'Ich wohne in Deutschland' 
+      }
+    ],
+  }
 ];
