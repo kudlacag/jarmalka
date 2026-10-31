@@ -16,9 +16,23 @@ export default function ArticleScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <ThemedText type="title">Ma jirto</ThemedText>
-          <Pressable onPress={() => router.back()}>
-            <ThemedText type="small">← Dib u noqo</ThemedText>
-          </Pressable>
+         <Pressable onPress={() => {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/learn');
+  }
+}}>
+  <ThemedText>← Dib u noqo</ThemedText>
+</Pressable>
+
+// For the top arrow:
+<Pressable onPress={() => {
+  if (router.canGoBack()) router.back();
+  else router.replace('/learn');
+}}>
+  <ThemedText style={{ fontSize: 24 }}>←</ThemedText>
+</Pressable>
         </SafeAreaView>
       </ThemedView>
     );
