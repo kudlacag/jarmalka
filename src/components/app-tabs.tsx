@@ -12,6 +12,7 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
+      
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Info</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -27,6 +28,15 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('../../assets/images/tabIcons/explore.png')} // We can use the same icon for now
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
     </NativeTabs>
   );
 }

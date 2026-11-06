@@ -1,4 +1,4 @@
-export type ExerciseType = 'multiple_choice' | 'sentence_build' | 'spelling';
+export type ExerciseType = 'multiple_choice' | 'sentence_build' | 'spelling' | 'match_pairs';
 
 export type VocabItem = {
   de: string;
@@ -10,6 +10,7 @@ export type Exercise = {
   type: ExerciseType;
   prompt: string;
   options: string[]; 
+
   correctAnswer: string;
 };
 
@@ -378,63 +379,74 @@ const baseLessons: Lesson[] = [
 
 // New function to generate the letter bank for spelling
 // Add this helper function if you don't have it already
+// 1. Bring back the Letter Bank generator for spelling
 function generateLetterBank(word: string): string[] {
-  const letters = word.replace(/\s/g, '').split(''); // Remove spaces and split
+  // Keep spaces as actual spaces so the UI can render the 🔲 box
+  const letters = word.split(''); 
+  
   // Add a few random extra letters to make it harder
   const extraLetters = ['a', 'e', 'i', 'o', 'u', 'n', 'r', 's', 't'].sort(() => 0.5 - Math.random()).slice(0, 3);
   return [...letters, ...extraLetters].sort(() => 0.5 - Math.random());
-}function generateDynamicExercises(lesson: Lesson): Lesson {
-  const generatedMCQs: Exercise[] = [];
-  const vocab = lesson.vocabulary;
+}
 
-  // 1. Generate a Multiple Choice question for EVERY vocabulary word
+export function generateDynamicExercises(lesson: Lesson): Lesson {
+  const generatedMCQs: Exercise[] = [];
+  const spellings: Exercise[] = []; 
+  
+  const uniqueVocab = Array.from(new Map(lesson.vocabulary.map(item => [item.de, item])).values());
+  const vocab = uniqueVocab;
+
   vocab.forEach((item, index) => {
     const otherVocab = vocab.filter(v => v.de !== item.de && v.so !== item.so);
     const shuffledOthers = [...otherVocab].sort(() => 0.5 - Math.random());
-    const distractors = shuffledOthers.slice(0, 2);
+    const distractors = shuffledOthers.slice(0, 2).map(d => d.so).filter(Boolean);
 
     if (index % 2 === 0) {
+      const options = [item.so, ...distractors];
       generatedMCQs.push({
         id: `mc-${index}-de-so`,
         type: 'multiple_choice',
         prompt: item.de,
-        options: [item.so, ...distractors.map(d => d.so)],
+        options: options.length > 0 ? options : ['No options'],
         correctAnswer: item.so,
       });
     } else {
+      const options = [item.de, ...shuffledOthers.slice(0, 2).map(d => d.de)];
       generatedMCQs.push({
         id: `mc-${index}-so-de`,
         type: 'multiple_choice',
         prompt: item.so,
-        options: [item.de, ...distractors.map(d => d.de)],
+        options: options.length > 0 ? options : ['No options'],
+        correctAnswer: item.de,
+      });
+    }
+
+    if (item.de.length <= 12 && item.de.length > 2) {
+      const letters = item.de.split('');
+      const extraLetters = ['a', 'e', 'i', 'o', 'u', 'n', 'r', 's', 't'].sort(() => 0.5 - Math.random()).slice(0, 3);
+      spellings.push({
+        id: `sp-${index}`,
+        type: 'spelling',
+        prompt: item.so, 
+        options: [...letters, ...extraLetters].sort(() => 0.5 - Math.random()),
         correctAnswer: item.de,
       });
     }
   });
 
-  // 2. Generate ONE Spelling Exercise per lesson (using the longest word)
-  if (vocab.length > 0) {
-    const longestVocab = [...vocab].sort((a, b) => b.de.length - a.de.length)[0];
-    const wordToSpell = longestVocab.de; // e.g., "das Internet"
-    
-    // Create a bank of letters. We use ' ' (a real space) for the space button.
-    const letters = wordToSpell.split(''); // This keeps the space intact!
-    const extraLetters = ['a', 'e', 'i', 'o', 'u', 'n', 'r', 's', 't', 'm', 'l', 'd', 'h'];
-    const randomExtras = extraLetters.sort(() => 0.5 - Math.random()).slice(0, 3);
-    
-    // Combine and shuffle
-    const letterBank = [...letters, ...randomExtras].sort(() => 0.5 - Math.random());
-
-    generatedMCQs.push({
-      id: `spell-${lesson.id}`,
-      type: 'spelling',
-      prompt: longestVocab.so, // Show Somali (e.g., "Internetka")
-      options: letterBank, // The letters to tap
-      correctAnswer: wordToSpell, // e.g., "das Internet"
+  const matches: Exercise[] = [];
+  if (vocab.length >= 4) {
+    const sortedVocab = [...vocab].sort((a, b) => b.de.length - a.de.length);
+    const allPairs = sortedVocab.flatMap(v => [v.de, v.so]);
+    matches.push({
+      id: `match-${lesson.id}`,
+      type: 'match_pairs',
+      prompt: 'Ku xir ereyada isku midka ah (Match the pairs)',
+      options: allPairs,
+      correctAnswer: 'matched',
     });
   }
 
-  // 3. Keep the custom sentence building exercises
   const sentenceExercises = lesson.exercises.filter(
     e => e.type === 'sentence_build' && e.options && e.options.length > 0
   ).map((ex, i) => {
@@ -442,18 +454,12 @@ function generateLetterBank(word: string): string[] {
     if (ex.options.length === 1 && typeof ex.options[0] === 'string') {
       fixedOptions = ex.options[0].split(' ');
     }
-    
-    return {
-      ...ex,
-      id: `sb-${i}`,
-      options: fixedOptions
-    };
+    return { ...ex, id: `sb-${i}`, options: fixedOptions };
   });
 
-  // 4. Combine them
   return {
     ...lesson,
-    exercises: [...generatedMCQs, ...sentenceExercises]
+    exercises: [...generatedMCQs, ...spellings, ...sentenceExercises, ...matches]
   };
 }
 
@@ -465,3 +471,22 @@ export const levels = [
   { id: 'a2', title: 'A2', subtitle: 'Heerka 2 (A2)', unlocked: false, color: '#DD0000' },
   { id: 'b1', title: 'B1', subtitle: 'Heerka 3 (B1)', unlocked: false, color: '#FFCE00' },
 ];
+// Function to generate a 30-question A1 Mock Exam
+export function generateA1Exam(): Exercise[] {
+  const allExercises: Exercise[] = [];
+  
+  a1Lessons.forEach((lesson) => {
+    allExercises.push(...lesson.exercises);
+  });
+
+  // 1. Get a balanced mix of question types
+  const mcqs = allExercises.filter(e => e.type === 'multiple_choice').sort(() => 0.5 - Math.random()).slice(0, 10);
+  const sentences = allExercises.filter(e => e.type === 'sentence_build').sort(() => 0.5 - Math.random()).slice(0, 6);
+  const spellings = allExercises.filter(e => e.type === 'spelling').sort(() => 0.5 - Math.random()).slice(0, 7);
+  const matches = allExercises.filter(e => e.type === 'match_pairs').sort(() => 0.5 - Math.random()).slice(0, 7);
+
+  // 2. Combine and shuffle the final 30 questions
+  const finalExam = [...mcqs, ...sentences, ...spellings, ...matches].sort(() => 0.5 - Math.random());
+  
+  return finalExam;
+}
