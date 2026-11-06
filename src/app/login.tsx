@@ -5,19 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <View style={styles.container}>
-        <Text style={{ fontSize: 32, fontWeight: 'bold' }}>Gal (Login)</Text>
-        <Text style={{ color: '#666', marginTop: 10, marginBottom: 30 }}>Ku soo dhawow Jarmalka</Text>
+        <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#1E293B' }}>Gal (Login)</Text>
+        <Text style={{ color: '#64748B', marginTop: 10, marginBottom: 30, fontSize: 16 }}>Ku soo dhawow Jarmalka</Text>
         
         {/* Your Login form goes here */}
 
         <AnimatedButton 
           title="Dib u noqo" 
           onPress={() => router.back()} 
-          backgroundColor="#E5E5E5" 
-          shadowColor="#C0C0C0" 
-          textColor="#333"
+          backgroundColor="#E2E8F0" 
+          shadowColor="#CBD5E1" 
+          textColor="#475569"
           fullWidth 
         />
       </View>

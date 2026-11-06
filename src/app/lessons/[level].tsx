@@ -72,7 +72,7 @@ export default function LevelScreen() {
   if (loading) {
     return (
       <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#4189DD" />
+        <ActivityIndicator size="large" color="#6366F1" />
       </ThemedView>
     );
   }
@@ -83,7 +83,7 @@ export default function LevelScreen() {
         
         <View style={styles.topBar}>
           <Pressable onPress={() => safeGoBack('/learn')} style={styles.backBtn}>
-            <ThemedText type="title" style={{ fontSize: 24 }}>←</ThemedText>
+            <ThemedText type="title" style={{ fontSize: 24, color: '#1E293B' }}>←</ThemedText>
           </Pressable>
           <ThemedText type="title" style={styles.headerTitle}>Casharrada {level?.toUpperCase()}</ThemedText>
           <View style={styles.statsContainer}>
@@ -98,7 +98,7 @@ export default function LevelScreen() {
               const score = progressData[lesson.id];
               const isCompleted = score !== undefined;
               
-              // LOCKING LOGIC
+              // LOCKING LOGIC (Untouched)
               const previousLessonId = index > 0 ? lessons[index - 1].id : null;
               const isUnlocked = index === 0 || (previousLessonId && progressData[previousLessonId] !== undefined);
               
@@ -107,19 +107,22 @@ export default function LevelScreen() {
                 ? { alignSelf: 'flex-start', marginLeft: 20 }
                 : { alignSelf: 'flex-end', marginRight: 20 };
 
-              let nodeColor = '#E5E5E5'; let icon = '🔒'; let shadowColor = '#C0C0C0';
+              // NEW COLORS FOR PATH
+              let nodeColor = '#E2E8F0'; // Locked (Slate)
+              let icon = '🔒'; 
+              let shadowColor = '#CBD5E1';
 
               if (isCompleted) {
-                if (score >= 80) { nodeColor = '#FFCE00'; icon = '⭐'; shadowColor = '#D4A300'; } 
-                else { nodeColor = '#FF9600'; icon = '🔄'; shadowColor = '#CC7800'; }
+                if (score >= 80) { nodeColor = '#F59E0B'; icon = '⭐'; shadowColor = '#D97706'; } // Amber (Mastered)
+                else { nodeColor = '#F43F5E'; icon = '🔄'; shadowColor = '#E11D48'; } // Rose (Needs Practice)
               } else if (isUnlocked) {
-                nodeColor = '#58cc02'; icon = '▶'; shadowColor = '#46A302';
+                nodeColor = '#10B981'; icon = '▶'; shadowColor = '#059669'; // Emerald (Active)
               }
 
               return (
                 <View key={lesson.id} style={styles.nodeWrapper}>
                   {index > 0 && (
-                    <View style={[styles.pathLine, isCompleted ? { backgroundColor: '#FFCE00' } : { backgroundColor: '#E5E5E5' }]} />
+                    <View style={[styles.pathLine, isCompleted ? { backgroundColor: '#F59E0B' } : { backgroundColor: '#E2E8F0' }]} />
                   )}
 
                   <Pressable 
@@ -130,13 +133,19 @@ export default function LevelScreen() {
                             alert("Fadlan marka hore dhammaystir casharka hore!");
                         }
                     }}
-                    style={[styles.nodeButton, alignmentStyle, { backgroundColor: nodeColor, shadowColor: shadowColor }]}
+                    // ADDED PRESS ANIMATION
+                    style={({ pressed }) => [
+                      styles.nodeButton, 
+                      alignmentStyle, 
+                      { backgroundColor: nodeColor, shadowColor: shadowColor },
+                      pressed && { transform: [{ scale: 0.9 }] }
+                    ]}
                   >
                     <ThemedText style={styles.nodeIcon}>{icon}</ThemedText>
                   </Pressable>
 
                   <View style={[styles.titleContainer, alignmentStyle]}>
-                    <ThemedText type="title" style={[styles.lessonTitle, !isUnlocked && { color: '#A0A0A0' }]}>
+                    <ThemedText type="title" style={[styles.lessonTitle, !isUnlocked && { color: '#94A3B8' }]}>
                       {lesson.title_so}
                     </ThemedText>
                     <ThemedText type="small" style={styles.lessonSubtitle}>
@@ -150,10 +159,13 @@ export default function LevelScreen() {
 
           {isA1Complete && (
             <View style={{ paddingHorizontal: 20, marginTop: 20, marginBottom: 40 }}>
-              <Pressable onPress={() => router.push('/exam' as Href)}>
-                <View style={{ backgroundColor: '#FFCE00', padding: 20, borderRadius: 16, alignItems: 'center', borderBottomWidth: 6, borderBottomColor: '#D4A300', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 5 }}>
-                  <ThemedText style={{ fontSize: 24, fontWeight: 'bold', color: '#333' }}>🏆 Imtixaanka A1</ThemedText>
-                  <ThemedText style={{ fontSize: 16, color: '#333', marginTop: 5, textAlign: 'center' }}>Qaado imtixaanka rasmiga ah oo hel shahaadaada!</ThemedText>
+              <Pressable 
+                onPress={() => router.push('/exam' as Href)}
+                style={({ pressed }) => [ pressed && { transform: [{ scale: 0.97 }] } ]}
+              >
+                <View style={{ backgroundColor: '#F59E0B', padding: 20, borderRadius: 20, alignItems: 'center', borderBottomWidth: 6, borderBottomColor: '#D97706', shadowColor: '#64748B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 5 }}>
+                  <ThemedText style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF' }}>🏆 Imtixaanka A1</ThemedText>
+                  <ThemedText style={{ fontSize: 16, color: '#FFF', marginTop: 5, textAlign: 'center' }}>Qaado imtixaanka rasmiga ah oo hel shahaadaada!</ThemedText>
                 </View>
               </Pressable>
             </View>
@@ -165,20 +177,20 @@ export default function LevelScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FB' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' }, // New Slate background
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   backBtn: { padding: 5 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
   statsContainer: { flexDirection: 'row', gap: 15 },
-  statText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  statText: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
   scrollContent: { paddingBottom: 50 },
   pathContainer: { paddingTop: 30, paddingHorizontal: 20, position: 'relative' },
   nodeWrapper: { position: 'relative', marginBottom: 40, width: '100%' },
-  pathLine: { position: 'absolute', top: -40, left: '50%', width: 12, height: 40, marginLeft: -6, zIndex: -1 },
-  nodeButton: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 0, elevation: 8, borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)' },
+  pathLine: { position: 'absolute', top: -40, left: '50%', width: 12, height: 40, marginLeft: -6, zIndex: -1, borderRadius: 6 },
+  nodeButton: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 0, elevation: 6, borderWidth: 4, borderColor: 'rgba(255,255,255,0.4)' },
   nodeIcon: { fontSize: 32, color: '#FFF' },
   titleContainer: { marginTop: 10, maxWidth: 160 },
-  lessonTitle: { fontSize: 16, lineHeight: 20 },
-  lessonSubtitle: { fontSize: 12, color: '#888', marginTop: 2 }
+  lessonTitle: { fontSize: 16, lineHeight: 20, color: '#1E293B' },
+  lessonSubtitle: { fontSize: 12, color: '#64748B', marginTop: 2 }
 });

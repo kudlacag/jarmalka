@@ -399,28 +399,55 @@ export function generateDynamicExercises(lesson: Lesson): Lesson {
   vocab.forEach((item, index) => {
     const otherVocab = vocab.filter(v => v.de !== item.de && v.so !== item.so);
     const shuffledOthers = [...otherVocab].sort(() => 0.5 - Math.random());
-    const distractors = shuffledOthers.slice(0, 2).map(d => d.so).filter(Boolean);
+
+    // --- FIX: Safe Options Generation ---
+    // Fallback words in case the lesson doesn't have enough words to create distractors
+    const fallbackSo = ['Haa', 'Maya', 'Fadlan', 'Mahadsanid', 'Nabadgelyo'];
+    const fallbackDe = ['Ja', 'Nein', 'Bitte', 'Danke', 'Tschüss'];
 
     if (index % 2 === 0) {
-      const options = [item.so, ...distractors];
+      // GERMAN -> SOMALI
+      let distractors = shuffledOthers.slice(0, 2).map(d => d.so).filter(Boolean);
+      
+      // Fill with fallbacks if we don't have 2 distractors
+      let i = 0;
+      while (distractors.length < 2 && i < fallbackSo.length) {
+        if (!distractors.includes(fallbackSo[i]) && fallbackSo[i] !== item.so) {
+          distractors.push(fallbackSo[i]);
+        }
+        i++;
+      }
+
       generatedMCQs.push({
         id: `mc-${index}-de-so`,
         type: 'multiple_choice',
         prompt: item.de,
-        options: options.length > 0 ? options : ['No options'],
+        options: [item.so, ...distractors],
         correctAnswer: item.so,
       });
     } else {
-      const options = [item.de, ...shuffledOthers.slice(0, 2).map(d => d.de)];
+      // SOMALI -> GERMAN
+      let distractors = shuffledOthers.slice(0, 2).map(d => d.de).filter(Boolean);
+      
+      // Fill with fallbacks if we don't have 2 distractors
+      let i = 0;
+      while (distractors.length < 2 && i < fallbackDe.length) {
+        if (!distractors.includes(fallbackDe[i]) && fallbackDe[i] !== item.de) {
+          distractors.push(fallbackDe[i]);
+        }
+        i++;
+      }
+
       generatedMCQs.push({
         id: `mc-${index}-so-de`,
         type: 'multiple_choice',
         prompt: item.so,
-        options: options.length > 0 ? options : ['No options'],
+        options: [item.de, ...distractors],
         correctAnswer: item.de,
       });
     }
 
+    // SPELLING
     if (item.de.length <= 12 && item.de.length > 2) {
       const letters = item.de.split('');
       const extraLetters = ['a', 'e', 'i', 'o', 'u', 'n', 'r', 's', 't'].sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -434,6 +461,7 @@ export function generateDynamicExercises(lesson: Lesson): Lesson {
     }
   });
 
+  // MATCH PAIRS
   const matches: Exercise[] = [];
   if (vocab.length >= 4) {
     const sortedVocab = [...vocab].sort((a, b) => b.de.length - a.de.length);
@@ -447,6 +475,7 @@ export function generateDynamicExercises(lesson: Lesson): Lesson {
     });
   }
 
+  // SENTENCE BUILD
   const sentenceExercises = lesson.exercises.filter(
     e => e.type === 'sentence_build' && e.options && e.options.length > 0
   ).map((ex, i) => {

@@ -15,7 +15,6 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
 
-  // FIXED: Use useFocusEffect to refresh data every time the tab is opened
   useFocusEffect(
     useCallback(() => {
       async function loadStats() {
@@ -42,7 +41,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
           
@@ -60,9 +59,10 @@ export default function ProfileScreen() {
                 <Pressable 
                   key={emoji} 
                   onPress={() => changeAvatar(emoji)}
-                  style={[
+                  style={({ pressed }) => [
                     styles.emojiOption, 
-                    stats.avatar_emoji === emoji && styles.emojiOptionSelected
+                    stats.avatar_emoji === emoji && styles.emojiOptionSelected,
+                    pressed && { transform: [{ scale: 0.9 }] }
                   ]}
                 >
                   <ThemedText style={{ fontSize: 28 }}>{emoji}</ThemedText>
@@ -114,8 +114,11 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-            <ThemedText style={{ color: '#ea2b2b', fontWeight: 'bold', fontSize: 16 }}>Ka bax (Logout)</ThemedText>
+          <Pressable 
+            onPress={handleLogout} 
+            style={({ pressed }) => [styles.logoutBtn, pressed && { transform: [{ scale: 0.97 }] }]}
+          >
+            <ThemedText style={{ color: '#F43F5E', fontWeight: 'bold', fontSize: 16 }}>Ka bax (Logout)</ThemedText>
           </Pressable>
 
         </ScrollView>
@@ -125,32 +128,32 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FB' },
+  container: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: 20, maxWidth: MaxContentWidth, width: '100%', alignSelf: 'center' },
   scroll: { paddingBottom: 50 },
   profileHeader: { alignItems: 'center', marginTop: 20, marginBottom: 15 },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E5F0FF', alignItems: 'center', justifyContent: 'center', marginBottom: 15, borderWidth: 4, borderColor: '#4189DD' },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 15, borderWidth: 4, borderColor: '#6366F1' },
   avatarEmoji: { fontSize: 55, lineHeight: 65, textAlign: 'center', textAlignVertical: 'center' },
-  name: { fontSize: 24, fontWeight: 'bold' },
-  email: { fontSize: 14, color: '#888', marginTop: 5 },
+  name: { fontSize: 24, fontWeight: 'bold', color: '#1E293B' },
+  email: { fontSize: 14, color: '#64748B', marginTop: 5 },
   
   emojiSelectorContainer: { marginBottom: 30 },
   emojiScroll: { gap: 12, paddingHorizontal: 5, paddingVertical: 10 },
   emojiOption: { width: 55, height: 55, borderRadius: 28, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
-  emojiOptionSelected: { borderColor: '#58cc02', backgroundColor: '#F7FFF2', transform: [{ scale: 1.1 }] },
+  emojiOptionSelected: { borderColor: '#10B981', backgroundColor: '#ECFDF5', transform: [{ scale: 1.1 }] },
 
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginBottom: 40 },
-  statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', shadowColor: '#64748B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 2 },
   statIcon: { fontSize: 24, marginBottom: 5 },
-  statValue: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  statLabel: { fontSize: 12, color: '#888', marginTop: 2 },
-  sectionTitle: { fontSize: 20, marginBottom: 15 },
+  statValue: { fontSize: 20, fontWeight: 'bold', color: '#1E293B' },
+  statLabel: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  sectionTitle: { fontSize: 20, marginBottom: 15, color: '#1E293B' },
   achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, justifyContent: 'space-between' },
   badgeCard: { width: '47%', backgroundColor: '#FFF', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 2 },
-  badgeUnlocked: { borderColor: '#FFCE00', backgroundColor: '#FFFDF5' },
-  badgeLocked: { borderColor: '#E5E5E5', opacity: 0.5 },
+  badgeUnlocked: { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' },
+  badgeLocked: { borderColor: '#E2E8F0', opacity: 0.5 },
   badgeIcon: { fontSize: 32, marginBottom: 10 },
-  badgeTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  badgeDesc: { fontSize: 12, color: '#888', marginTop: 4 },
-  logoutBtn: { marginTop: 40, padding: 15, alignItems: 'center', backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#ea2b2b' }
+  badgeTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  badgeDesc: { fontSize: 12, color: '#64748B', marginTop: 4 },
+  logoutBtn: { marginTop: 40, padding: 16, alignItems: 'center', backgroundColor: '#FFF', borderRadius: 16, borderWidth: 2, borderColor: '#F43F5E' }
 });

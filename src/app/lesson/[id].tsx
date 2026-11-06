@@ -128,6 +128,50 @@ export default function LessonScreen() {
     loadGermanVoice();
   }, []);
 
+    // --- Setup Question Logic (THIS WAS MISSING) ---
+  useEffect(() => {
+    if (exercise && !showVocab) {
+      if (exercise.type === 'multiple_choice') {
+        Speech.stop();
+        Speech.speak(exercise.prompt, { language: 'de-DE', voice: germanVoiceId, rate: 0.9 });
+      }
+
+      if (exercise.type === 'match_pairs') {
+        const pairs = [];
+        for (let i = 0; i < exercise.options.length; i += 2) {
+          pairs.push({ de: exercise.options[i], so: exercise.options[i + 1] });
+        }
+        const shuffledPairs = pairs.sort(() => 0.5 - Math.random()).slice(0, 5);
+        const deWords = shuffledPairs.map(p => p.de).sort(() => 0.5 - Math.random());
+        const soWords = shuffledPairs.map(p => p.so).sort(() => 0.5 - Math.random());
+        
+        setLeftWords(deWords);
+        setRightWords(soWords);
+        
+        const mapping: Record<string, string> = {};
+        shuffledPairs.forEach(p => { mapping[p.de] = p.so; });
+        setMatchMapping(mapping);
+        
+        setLeftSelected(null);
+        setRightSelected(null);
+        setMatchedPairs([]); 
+      }
+
+      // SAFETY CHECK: If options are empty, provide a fallback
+      let rawOptions = exercise.options;
+      if (!rawOptions || !Array.isArray(rawOptions)) {
+        rawOptions = ['Error', 'Loading', 'Please Check'];
+      }
+      
+      const options = [...rawOptions];
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+      setShuffledOptions(options);
+    }
+  }, [index, exercise, germanVoiceId, showVocab]);
+
   useEffect(() => {
     if (finished) {
       Animated.sequence([
@@ -324,8 +368,8 @@ export default function LessonScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#4189DD" />
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }]}>
+        <ActivityIndicator size="large" color="#6366F1" />
       </ThemedView>
     );
   }
@@ -336,31 +380,34 @@ export default function LessonScreen() {
   // --- RENDER A2/B1 ACTIVITIES LIST ---
   if (lessonLevel === 'a2' || lessonLevel === 'b1') {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <ScrollView contentContainerStyle={styles.scroll}>
             <Pressable onPress={() => safeGoBack('/learn')} style={styles.closeBtn}>
-              <ThemedText type="title" style={{ fontSize: 20 }}>✕</ThemedText>
+              <ThemedText type="title" style={{ fontSize: 20, color: '#1E293B' }}>✕</ThemedText>
             </Pressable>
             
-            <ThemedText type="title" style={{ marginTop: 10 }}>{lesson?.title}</ThemedText>
-            <ThemedText type="small" style={{ marginBottom: 20, opacity: 0.7 }}>
+            <ThemedText type="title" style={{ marginTop: 10, color: '#1E293B' }}>{lesson?.title}</ThemedText>
+            <ThemedText type="small" style={{ marginBottom: 20, color: '#64748B' }}>
               {lesson?.titleDe} · Dooro casharka (Choose an activity)
             </ThemedText>
 
             {activities.length === 0 && (
-               <ThemedText style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>Ma jiraan waxqabadyo wali (No activities yet).</ThemedText>
+               <ThemedText style={{ textAlign: 'center', marginTop: 40, color: '#94A3B8' }}>Ma jiraan waxqabadyo wali (No activities yet).</ThemedText>
             )}
 
             {activities.map((act) => (
               <Pressable 
                 key={act.id} 
                 onPress={() => router.push({ pathname: '/activity/[id]', params: { id: act.id } })}
-                style={{ marginBottom: 15 }}
+                style={({ pressed }) => [
+                  { marginBottom: 15 },
+                  pressed && { transform: [{ scale: 0.97 }] }
+                ]}
               >
-                <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 16, borderLeftWidth: 6, borderLeftColor: act.type === 'reading' ? '#4189DD' : act.type === 'listening' ? '#FFCE00' : '#58cc02', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-                  <ThemedText type="title" style={{ fontSize: 18 }}>{act.title_so}</ThemedText>
-                  <ThemedText style={{ fontSize: 14, color: '#888', marginTop: 4 }}>{act.title_de}</ThemedText>
+                <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 20, borderLeftWidth: 8, borderLeftColor: act.type === 'reading' ? '#6366F1' : act.type === 'listening' ? '#F59E0B' : '#10B981', shadowColor: '#64748B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }}>
+                  <ThemedText type="title" style={{ fontSize: 18, color: '#1E293B' }}>{act.title_so}</ThemedText>
+                  <ThemedText style={{ fontSize: 14, color: '#64748B', marginTop: 4 }}>{act.title_de}</ThemedText>
                   <ThemedText style={{ fontSize: 16, fontWeight: 'bold', color: '#333', marginTop: 10 }}>
                     {act.type === 'reading' ? '📖 Akhris (Reading)' : act.type === 'listening' ? '🎧 Dhageysi (Listening)' : '📝 Naxwe (Grammar)'}
                   </ThemedText>
@@ -376,27 +423,27 @@ export default function LessonScreen() {
   // --- GAME OVER SCREEN ---
   if (gameOver) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
         <SafeAreaView style={styles.safeArea}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
             <ThemedText style={{ fontSize: 80 }}>💔</ThemedText>
-            <ThemedText type="title" style={{ marginTop: 20, textAlign: 'center', fontSize: 28 }}>
+            <ThemedText type="title" style={{ marginTop: 20, textAlign: 'center', fontSize: 28, color: '#1E293B' }}>
               Waxaad dhammaysatay Qalbiga!
             </ThemedText>
-            <ThemedText style={{ textAlign: 'center', marginTop: 10, color: '#666', marginBottom: 30, fontSize: 16 }}>
+            <ThemedText style={{ textAlign: 'center', marginTop: 10, color: '#64748B', marginBottom: 30, fontSize: 16 }}>
               Ma haysato qalbiyo ku hadhay. Maxaad jeceshahay inaad samayso?
             </ThemedText>
 
             <AnimatedButton 
               title={`Ku buuxi 50 💎 Gems (Waxaa haysata ${gems})`} 
               onPress={refillHearts} 
-              backgroundColor={gems >= 50 ? "#58cc02" : "#A0A0A0"} 
-              shadowColor={gems >= 50 ? "#58a700" : "#888"} 
+              backgroundColor={gems >= 50 ? "#10B981" : "#94A3B8"} 
+              shadowColor={gems >= 50 ? "#059669" : "#64748B"} 
               fullWidth 
             />
             
             <View style={{ marginTop: 15, width: '100%' }}>
-              <AnimatedButton title="Ku noqo casharka (Read Vocab)" onPress={() => safeGoBack('/learn')} backgroundColor="#4189DD" shadowColor="#2b5a91" fullWidth />
+              <AnimatedButton title="Ku noqo casharka (Read Vocab)" onPress={() => safeGoBack('/learn')} backgroundColor="#6366F1" shadowColor="#4F46E5" fullWidth />
             </View>
           </View>
         </SafeAreaView>
@@ -405,12 +452,12 @@ export default function LessonScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <ThemedText style={{ fontSize: 50, textAlign: 'center', marginBottom: 10 }}>💎</ThemedText>
-              <ThemedText type="title" style={{ textAlign: 'center', fontSize: 22 }}>Gems kuma filna!</ThemedText>
-              <ThemedText style={{ textAlign: 'center', marginTop: 10, color: '#666' }}>
+              <ThemedText type="title" style={{ textAlign: 'center', fontSize: 22, color: '#1E293B' }}>Gems kuma filna!</ThemedText>
+              <ThemedText style={{ textAlign: 'center', marginTop: 10, color: '#64748B' }}>
                 Waxaad u baahan tahay 50 Gems si aad u buuxiso Qalbiga. Fadlan samee casharro kale si aad u hesho Gems.
               </ThemedText>
               <View style={{ marginTop: 20 }}>
-                <AnimatedButton title="Hagaag" onPress={() => setShowGemWarning(false)} backgroundColor="#4189DD" shadowColor="#2b5a91" fullWidth />
+                <AnimatedButton title="Hagaag" onPress={() => setShowGemWarning(false)} backgroundColor="#6366F1" shadowColor="#4F46E5" fullWidth />
               </View>
             </View>
           </View>
@@ -422,34 +469,34 @@ export default function LessonScreen() {
   // --- Render Vocabulary Preview (A1 Only) ---
   if (showVocab && lessonLevel === 'a1') {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <ScrollView contentContainerStyle={styles.scroll}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <Pressable onPress={() => safeGoBack('/learn')} style={styles.closeBtn}>
-                <ThemedText type="title" style={{ fontSize: 20 }}>✕</ThemedText>
+                <ThemedText type="title" style={{ fontSize: 20, color: '#1E293B' }}>✕</ThemedText>
               </Pressable>
               <View style={styles.statPill}>
                 <ThemedText style={styles.statIcon}>❤️</ThemedText>
                 <ThemedText style={styles.statText}>{hearts}</ThemedText>
               </View>
             </View>
-            <ThemedText type="title" style={{ marginTop: 10 }}>{lesson.title}</ThemedText>
-            <ThemedText type="small" style={{ marginBottom: 20, opacity: 0.7 }}>Baro erayada ka hor inta aadan bilaabin casharka</ThemedText>
+            <ThemedText type="title" style={{ marginTop: 10, color: '#1E293B' }}>{lesson.title}</ThemedText>
+            <ThemedText type="small" style={{ marginBottom: 20, color: '#64748B' }}>Baro erayada ka hor inta aadan bilaabin casharka</ThemedText>
             
             <View style={{ gap: 10, marginBottom: 30 }}>
               {lesson.vocabulary.map((v: any, i: number) => (
                 <Pressable key={i} onPress={() => Speech.speak(v.de, { language: 'de-DE', voice: germanVoiceId })}>
                   <View style={styles.vocabRow}>
-                    <ThemedText style={{ fontSize: 18, fontWeight: 'bold', flex: 1 }}>{v.de}</ThemedText>
-                    <ThemedText style={{ fontSize: 16, opacity: 0.7, flex: 1, textAlign: 'right' }}>{v.so}</ThemedText>
+                    <ThemedText style={{ fontSize: 18, fontWeight: 'bold', flex: 1, color: '#1E293B' }}>{v.de}</ThemedText>
+                    <ThemedText style={{ fontSize: 16, color: '#64748B', flex: 1, textAlign: 'right' }}>{v.so}</ThemedText>
                     <ThemedText style={{ fontSize: 18, marginLeft: 10 }}>🔊</ThemedText>
                   </View>
                 </Pressable>
               ))}
             </View>
 
-            <AnimatedButton title="Bilow Casharka" onPress={startLesson} backgroundColor="#58cc02" shadowColor="#58a700" fullWidth />
+            <AnimatedButton title="Bilow Casharka" onPress={startLesson} backgroundColor="#10B981" shadowColor="#059669" fullWidth />
           </ScrollView>
         </SafeAreaView>
       </ThemedView>
@@ -470,7 +517,7 @@ export default function LessonScreen() {
     const card3Y = card3Anim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] });
 
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
         <ConfettiCannon count={100} origin={{x: -10, y: 0}} fadeOut={true} />
         <SafeAreaView style={styles.safeArea}>
           <ScrollView contentContainerStyle={styles.scrollCenter} showsVerticalScrollIndicator={false}>
@@ -479,30 +526,30 @@ export default function LessonScreen() {
               <ThemedText style={{ fontSize: 100, textAlign: 'center' }}>🦉</ThemedText>
             </Animated.View>
             
-            <ThemedText type="title" style={{ marginTop: 10, textAlign: 'center', fontSize: 32 }}>
+            <ThemedText type="title" style={{ marginTop: 10, textAlign: 'center', fontSize: 32, color: '#1E293B' }}>
               Waad dhammaysay! 🎉
             </ThemedText>
 
             <Animated.View style={{ transform: [{ scale: textAnim }] }}>
-              <ThemedText style={{ fontSize: 18, color: '#58cc02', fontWeight: 'bold', marginTop: 10, marginBottom: 20 }}>
+              <ThemedText style={{ fontSize: 18, color: '#10B981', fontWeight: 'bold', marginTop: 10, marginBottom: 20 }}>
                 Aad baad u fiican tahay!
               </ThemedText>
             </Animated.View>
 
             <View style={styles.statsRow}>
-              <Animated.View style={[styles.statCard, { borderBottomColor: '#FFCE00', transform: [{ translateY: card1Y }] }]}>
+              <Animated.View style={[styles.statCard, { borderBottomColor: '#F59E0B', transform: [{ translateY: card1Y }] }]}>
                 <ThemedText style={styles.statIcon}>🎯</ThemedText>
                 <ThemedText style={styles.statValue}>{percentage}%</ThemedText>
                 <ThemedText style={styles.statLabel}>Natiijo ({score}/{total})</ThemedText>
               </Animated.View>
 
-              <Animated.View style={[styles.statCard, { borderBottomColor: '#1cb0f6', transform: [{ translateY: card2Y }] }]}>
+              <Animated.View style={[styles.statCard, { borderBottomColor: '#6366F1', transform: [{ translateY: card2Y }] }]}>
                 <ThemedText style={styles.statIcon}>⏱️</ThemedText>
                 <ThemedText style={styles.statValue}>{formattedTime}</ThemedText>
                 <ThemedText style={styles.statLabel}>Waqti</ThemedText>
               </Animated.View>
 
-              <Animated.View style={[styles.statCard, { borderBottomColor: '#ce82ff', transform: [{ translateY: card3Y }] }]}>
+              <Animated.View style={[styles.statCard, { borderBottomColor: '#F43F5E', transform: [{ translateY: card3Y }] }]}>
                 <ThemedText style={styles.statIcon}>⚡</ThemedText>
                 <ThemedText style={styles.statValue}>+10</ThemedText>
                 <ThemedText style={styles.statLabel}>XP</ThemedText>
@@ -511,13 +558,13 @@ export default function LessonScreen() {
 
             <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                <ThemedText style={{ fontSize: 20 }}>💎</ThemedText>
-               <ThemedText style={{ fontSize: 18, fontWeight: 'bold', color: '#1cb0f6' }}>+20 Gems Earned!</ThemedText>
+               <ThemedText style={{ fontSize: 18, fontWeight: 'bold', color: '#6366F1' }}>+20 Gems Earned!</ThemedText>
             </View>
 
-            <AnimatedButton title="Mar kale bilow" onPress={restart} backgroundColor="#58cc02" shadowColor="#58a700" fullWidth style={{ marginTop: 40 }} />
+            <AnimatedButton title="Mar kale bilow" onPress={restart} backgroundColor="#10B981" shadowColor="#059669" fullWidth style={{ marginTop: 40 }} />
             
             <Pressable onPress={() => safeGoBack('/learn')} style={styles.back}>
-              <ThemedText type="small" style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>← Dib u noqo</ThemedText>
+              <ThemedText type="small" style={{ textAlign: 'center', marginTop: 20, color: '#64748B' }}>← Dib u noqo</ThemedText>
             </Pressable>
           </ScrollView>
         </SafeAreaView>
@@ -529,13 +576,13 @@ export default function LessonScreen() {
 
   // --- Render A1 Game Screen ---
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: '#F8FAFC' }]}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll}>
           
           <View style={styles.topBar}>
             <Pressable onPress={() => safeGoBack('/learn')} style={styles.closeBtn}>
-              <ThemedText type="title" style={{ fontSize: 20 }}>✕</ThemedText>
+              <ThemedText type="title" style={{ fontSize: 20, color: '#1E293B' }}>✕</ThemedText>
             </Pressable>
             <View style={styles.progressBarBg}>
               <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
@@ -567,10 +614,10 @@ export default function LessonScreen() {
               {shuffledOptions.map((option, i) => {
                 const isThis = selected === option;
                 const isRight = option === exercise.correctAnswer;
-                let bgColor = '#FFFFFF', shadowColor = '#E5E5E5', textColor = '#333333';
+                let bgColor = '#FFFFFF', shadowColor = '#E2E8F0', textColor = '#1E293B';
                 if (isAnswered) {
-                  if (isRight) { bgColor = '#d7ffb8'; shadowColor = '#a5d68c'; textColor = '#58a700'; }
-                  else if (isThis) { bgColor = '#ffdfe0'; shadowColor = '#ea2b2b'; textColor = '#ea2b2b'; }
+                  if (isRight) { bgColor = '#ECFDF5'; shadowColor = '#10B981'; textColor = '#059669'; }
+                  else if (isThis) { bgColor = '#FFF1F2'; shadowColor = '#F43F5E'; textColor = '#E11D48'; }
                 }
                 return (
                   <View key={`${option}-${i}`} style={{ marginBottom: 12 }}>
@@ -591,7 +638,7 @@ export default function LessonScreen() {
                       newSelected.splice(i, 1);
                       setSelectedWords(newSelected);
                     }} style={styles.wordChipSelected}>
-                    <ThemedText style={{ color: '#333', fontSize: 16, fontWeight: 'bold' }}>{word}</ThemedText>
+                    <ThemedText style={{ color: '#1E293B', fontSize: 16, fontWeight: 'bold' }}>{word}</ThemedText>
                   </Pressable>
                 ))}
               </View>
@@ -599,8 +646,12 @@ export default function LessonScreen() {
                 {shuffledOptions.map((word, i) => {
                   const isUsed = selectedWords.includes(word);
                   return (
-                    <Pressable key={`${word}-${i}`} onPress={() => handleWordTap(word)} disabled={isAnswered || isUsed} style={[styles.wordChip, isUsed && { opacity: 0.2 }]}>
-                      <ThemedText style={{ fontSize: 16, fontWeight: 'bold' }}>{word}</ThemedText>
+                    <Pressable key={`${word}-${i}`} onPress={() => handleWordTap(word)} disabled={isAnswered || isUsed} style={({ pressed }) => [
+                      styles.wordChip, 
+                      isUsed && { opacity: 0.2 },
+                      pressed && { transform: [{ scale: 0.95 }] }
+                    ]}>
+                      <ThemedText style={{ fontSize: 16, fontWeight: 'bold', color: '#1E293B' }}>{word}</ThemedText>
                     </Pressable>
                   );
                 })}
@@ -620,7 +671,7 @@ export default function LessonScreen() {
                         newSelected.splice(index, 1);
                         setSelectedLetters(newSelected);
                       }} style={[styles.spellingBox, letter && styles.spellingBoxFilled]}>
-                      <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{letter === ' ' ? '' : letter}</ThemedText>
+                      <ThemedText style={{ fontSize: 20, fontWeight: 'bold', color: '#1E293B' }}>{letter === ' ' ? '' : letter}</ThemedText>
                     </Pressable>
                   );
                 })}
@@ -629,8 +680,13 @@ export default function LessonScreen() {
                 {shuffledOptions.map((letter, i) => {
                   const isUsed = selectedLetters.filter(l => l === letter).length >= shuffledOptions.filter(l => l === letter).length;
                   return (
-                    <Pressable key={`${letter}-${i}`} onPress={() => handleLetterTap(letter)} disabled={isAnswered || isUsed} style={[styles.wordChip, isUsed && { opacity: 0.2 }, letter === ' ' && { backgroundColor: '#E5F0FF' }]}>
-                      <ThemedText style={{ fontSize: 20, fontWeight: 'bold' }}>{letter === ' ' ? '🔲' : letter}</ThemedText>
+                    <Pressable key={`${letter}-${i}`} onPress={() => handleLetterTap(letter)} disabled={isAnswered || isUsed} style={({ pressed }) => [
+                      styles.wordChip, 
+                      isUsed && { opacity: 0.2 }, 
+                      letter === ' ' && { backgroundColor: '#EEF2FF', borderColor: '#6366F1' },
+                      pressed && { transform: [{ scale: 0.95 }] }
+                    ]}>
+                      <ThemedText style={{ fontSize: 20, fontWeight: 'bold', color: '#1E293B' }}>{letter === ' ' ? '🔲' : letter}</ThemedText>
                     </Pressable>
                   );
                 })}
@@ -645,7 +701,12 @@ export default function LessonScreen() {
                   const isMatched = matchedPairs.includes(word);
                   const isSelected = leftSelected === word;
                   return (
-                    <Pressable key={`left-${word}-${index}`} onPress={() => handleMatchTap(word, 'left')} disabled={isMatched || isAnswered} style={[styles.matchCard, isSelected && styles.matchCardSelected, isMatched && styles.matchCardMatched]}>
+                    <Pressable key={`left-${word}-${index}`} onPress={() => handleMatchTap(word, 'left')} disabled={isMatched || isAnswered} style={({ pressed }) => [
+                      styles.matchCard, 
+                      isSelected && styles.matchCardSelected, 
+                      isMatched && styles.matchCardMatched,
+                      pressed && { transform: [{ scale: 0.95 }] }
+                    ]}>
                       <ThemedText style={[styles.matchText, isMatched && { opacity: 0.3 }]}>{word}</ThemedText>
                     </Pressable>
                   );
@@ -657,7 +718,12 @@ export default function LessonScreen() {
                   const isMatched = matchedWord !== undefined && matchedPairs.includes(matchedWord);
                   const isSelected = rightSelected === word;
                   return (
-                    <Pressable key={`right-${word}-${index}`} onPress={() => handleMatchTap(word, 'right')} disabled={isMatched || isAnswered} style={[styles.matchCard, isSelected && styles.matchCardSelected, isMatched && styles.matchCardMatched]}>
+                    <Pressable key={`right-${word}-${index}`} onPress={() => handleMatchTap(word, 'right')} disabled={isMatched || isAnswered} style={({ pressed }) => [
+                      styles.matchCard, 
+                      isSelected && styles.matchCardSelected, 
+                      isMatched && styles.matchCardMatched,
+                      pressed && { transform: [{ scale: 0.95 }] }
+                    ]}>
                       <ThemedText style={[styles.matchText, isMatched && { opacity: 0.3 }]}>{word}</ThemedText>
                     </Pressable>
                   );
@@ -668,7 +734,7 @@ export default function LessonScreen() {
 
           {isAnswered && (
             <View style={{ marginTop: 30, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
-               <ThemedText style={{ color: selected === exercise.correctAnswer || selected === 'matched' ? '#58a700' : '#ea2b2b', fontWeight: 'bold', fontSize: 18 }}>
+               <ThemedText style={{ color: selected === exercise.correctAnswer || selected === 'matched' ? '#10B981' : '#F43F5E', fontWeight: 'bold', fontSize: 18 }}>
                  {selected === exercise.correctAnswer || selected === 'matched' ? 'Aad u fiican! (Sax)' : `Qalad. Sax: ${exercise.correctAnswer}`}
                </ThemedText>
                {(selected === exercise.correctAnswer || selected === 'matched') && exercise.type !== 'match_pairs' && (
@@ -681,7 +747,7 @@ export default function LessonScreen() {
           
           {isAnswered && (
             <View style={{ marginTop: 20, marginBottom: 40 }}>
-              <AnimatedButton title={isLast && (selected === exercise.correctAnswer || selected === 'matched') ? "Dhammaystir" : "Xiga →"} onPress={next} backgroundColor="#58cc02" shadowColor="#58a700" fullWidth hapticStyle="Medium" />
+              <AnimatedButton title={isLast && (selected === exercise.correctAnswer || selected === 'matched') ? "Dhammaystir" : "Xiga →"} onPress={next} backgroundColor="#6366F1" shadowColor="#4F46E5" fullWidth hapticStyle="Medium" />
             </View>
           )}
         </ScrollView>
@@ -697,41 +763,41 @@ const styles = StyleSheet.create({
   scrollCenter: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 15 },
   closeBtn: { padding: 5 },
-  progressBarBg: { flex: 1, height: 14, backgroundColor: '#E5E5E5', borderRadius: 7, overflow: 'hidden' },
-  progressBarFill: { height: '100%', backgroundColor: '#58cc02', borderRadius: 7 },
-  counter: { fontWeight: 'bold', opacity: 0.5 },
-  instruction: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, opacity: 0.8 },
+  progressBarBg: { flex: 1, height: 14, backgroundColor: '#E2E8F0', borderRadius: 7, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: '#6366F1', borderRadius: 7 },
+  counter: { fontWeight: 'bold', opacity: 0.5, color: '#1E293B' },
+  instruction: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, color: '#475569' },
   promptContainer: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 30 },
-  prompt: { fontSize: 26 },
-  audioBtn: { padding: 10, backgroundColor: '#E5F0FF', borderRadius: 12 },
+  prompt: { fontSize: 26, color: '#1E293B' },
+  audioBtn: { padding: 10, backgroundColor: '#EEF2FF', borderRadius: 12 },
   optionsContainer: { marginTop: 10 },
   back: { marginTop: 20 },
-  vocabRow: { flexDirection: 'row', backgroundColor: '#FFF', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#E5E5E5', alignItems: 'center' },
+  vocabRow: { flexDirection: 'row', backgroundColor: '#FFF', padding: 15, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
   sentenceContainer: { flex: 1 },
-  sentenceLine: { minHeight: 60, flexDirection: 'row', flexWrap: 'wrap', borderBottomWidth: 2, borderBottomColor: '#E5E5E5', paddingBottom: 10, gap: 8, marginBottom: 30 },
+  sentenceLine: { minHeight: 60, flexDirection: 'row', flexWrap: 'wrap', borderBottomWidth: 2, borderBottomColor: '#E2E8F0', paddingBottom: 10, gap: 8, marginBottom: 30 },
   wordBank: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  wordChip: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  wordChipSelected: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#E5E5E5', borderRadius: 12, borderWidth: 1, borderColor: '#d4d4d4' },
+  wordChip: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 2, borderColor: '#E2E8F0', shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
+  wordChipSelected: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#EEF2FF', borderRadius: 12, borderWidth: 2, borderColor: '#6366F1' },
   
   spellingLine: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 40, justifyContent: 'center' },
-  spellingBox: { width: 40, height: 50, borderBottomWidth: 3, borderBottomColor: '#E5E5E5', alignItems: 'center', justifyContent: 'center' },
-  spellingBoxFilled: { borderBottomColor: '#58cc02', backgroundColor: '#F7FFF2', borderRadius: 8 },
+  spellingBox: { width: 40, height: 50, borderBottomWidth: 3, borderBottomColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+  spellingBoxFilled: { borderBottomColor: '#6366F1', backgroundColor: '#EEF2FF', borderRadius: 8 },
 
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, marginTop: 20 },
-  statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', marginHorizontal: 5, borderBottomWidth: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  statCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', marginHorizontal: 5, borderBottomWidth: 4, shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   statIcon: { fontSize: 24, marginBottom: 5 },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  statLabel: { fontSize: 12, color: '#888', marginTop: 2, textAlign: 'center' },
+  statValue: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
+  statLabel: { fontSize: 12, color: '#64748B', marginTop: 2, textAlign: 'center' },
 
   matchContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 10 },
   matchColumn: { flex: 1, gap: 10 },
-  matchCard: { backgroundColor: '#FFF', padding: 15, borderRadius: 12, borderWidth: 2, borderColor: '#E5E5E5', borderBottomWidth: 4, alignItems: 'center', justifyContent: 'center', minHeight: 60 },
-  matchCardSelected: { borderColor: '#1cb0f6', backgroundColor: '#E5F0FF' },
-  matchCardMatched: { borderColor: '#A5D68C', backgroundColor: '#F7FFF2', borderBottomWidth: 2, marginTop: 2 },
-  matchText: { fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  matchCard: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, borderWidth: 2, borderColor: '#E2E8F0', borderBottomWidth: 4, alignItems: 'center', justifyContent: 'center', minHeight: 60 },
+  matchCardSelected: { borderColor: '#6366F1', backgroundColor: '#EEF2FF' },
+  matchCardMatched: { borderColor: '#10B981', backgroundColor: '#ECFDF5', borderBottomWidth: 2, marginTop: 2 },
+  matchText: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', color: '#1E293B' },
   
-  statPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  statText: { fontSize: 16, fontWeight: 'bold' },
-  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 999 },
-  modalContent: { backgroundColor: '#FFF', padding: 30, borderRadius: 20, width: '100%', maxWidth: 350 },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0' },
+  statText: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 999 },
+  modalContent: { backgroundColor: '#FFF', padding: 30, borderRadius: 24, width: '100%', maxWidth: 350, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
 });
